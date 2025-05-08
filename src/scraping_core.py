@@ -36,7 +36,7 @@ def run_scraping():
         title = result['title']
         url = result['url']
 
-        current_data = get_current_title_and_url("penelope")
+        current_data = get_current_title_and_url()
         if not current_data:
             raise Exception("DynamoDBにデータが存在しません。")
 

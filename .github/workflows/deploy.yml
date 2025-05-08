@@ -1,0 +1,57 @@
+name: Build and Deploy to AWS
+
+on:
+  repository_dispatch:
+    types: [lambda_scraping_failed] 
+  push:
+    branches:
+      - main  # メインブランチがプッシュされたときに実行
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+     AWS_REGION: ap-northeast-1
+     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+     ECR_REPO_URI: ${{ secrets.ECR_REPO_URI }}
+     ECR_REPO_NAME: ${{ secrets.ECR_REPO_NAME }}  
+    steps:
+      # 1. ソースコードのチェックアウト
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      # 2. Amazon ECR にログイン
+      - name: Log in to Amazon ECR
+        run: |
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO_URI
+      # 3. コンテナイメージをビルドしてECRにプッシュ
+      - name: Build, Tag, and Push to ECR
+        run: |
+          docker build -t my-lambda .
+          docker tag my-lambda:latest $ECR_REPO_URI:latest
+          docker push $ECR_REPO_URI:latest
+      # 4. Lambda関数の更新
+      - name: Update AWS Lambda Function          
+        run: |
+          aws lambda update-function-code \
+            --region $AWS_REGION \
+            --function-name pene \
+            --image-uri $ECR_REPO_URI:latest
+      # 5. 古いECRイメージを削除
+      - name: Clean up old ECR images
+        run: |
+          IMAGE_IDS=$(aws ecr list-images \
+            --region $AWS_REGION \
+            --repository-name $ECR_REPO_NAME \
+            --query 'imageIds[?imageTag==`null`]' \
+            --output json)
+          if [ "$IMAGE_IDS" == "[]" ]; then
+            echo "No untagged images to delete."
+          else
+            echo "Deleting the following images: $IMAGE_IDS"
+            echo $IMAGE_IDS | aws ecr batch-delete-image \
+              --region $AWS_REGION \
+              --repository-name $ECR_REPO_NAME \
+              --image-ids file://<(echo $IMAGE_IDS)
+          fi
