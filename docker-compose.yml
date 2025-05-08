@@ -1,0 +1,31 @@
+version: '3.8'
+services:
+  localstack:
+    image: localstack/localstack
+    ports:
+      - "4567:4566"  # LocalStackのエンドポイント
+
+  localstack-setup:
+    image: amazon/aws-cli
+    volumes:
+      - ./setup:/setup  # setup.sh が格納されているディレクトリ
+    entrypoint: ["/setup/setup.sh"]  # setup.sh を実行
+    environment:
+      - AWS_DEFAULT_REGION=ap-northeast-1
+      - AWS_ACCESS_KEY_ID=dummy
+      - AWS_SECRET_ACCESS_KEY=dummy
+      - AWS_ENDPOINT_URL=http://localstack:4566
+    depends_on:
+      - localstack  # localstack が起動してから実行
+
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin
+    ports:
+      - "8001:8001"
+    environment:
+      - DYNAMO_ENDPOINT=http://localstack:4566
+      - AWS_REGION=ap-northeast-1
+      - AWS_ACCESS_KEY_ID=dummy
+      - AWS_SECRET_ACCESS_KEY=dummy
+    depends_on:
+      - localstack

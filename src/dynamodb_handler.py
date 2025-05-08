@@ -2,11 +2,25 @@ import os
 import boto3
 from botocore.exceptions import ClientError
 
+
+def get_dynamodb_client():
+    if os.getenv("ENV") == "local":
+        # LocalStack への接続
+        return boto3.resource(
+            'dynamodb',
+            endpoint_url='http://localhost:4567',
+            region_name='ap-northeast-1',
+            aws_access_key_id='dummy',
+            aws_secret_access_key='dummy'
+        )
+    else:
+        # 本番用の接続
+        return boto3.resource('dynamodb')
+
 # DynamoDBテーブル名
 TABLE_NAME =os.getenv('DYNAMO_TABLE_NAME') 
-
 # DynamoDBリソースの初期化
-dynamodb = boto3.resource('dynamodb')
+dynamodb = get_dynamodb_client()
 table = dynamodb.Table(TABLE_NAME)
 
 def get_current_title_and_url():
