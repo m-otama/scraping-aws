@@ -2,8 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from penelope_scraper import scrape_penelope
 from dynamodb_handler import get_current_title_and_url, update_title_and_url
-from line import send_broadcast
-from notify_admin import notify_admin
+from line import send_broadcast,send_admin
 from call_github_action import trigger_github_actions
 import os
 
@@ -59,7 +58,7 @@ def run_scraping():
         else:
             try:
                 trigger_github_actions()
-                notify_admin(f"[スクレイピング失敗]\n{str(e)}")
+                send_admin(f"[スクレイピング失敗]\n{str(e)}")
             except Exception as notify_err:
                 print("LINE通知失敗:", str(notify_err))
 
