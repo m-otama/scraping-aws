@@ -3,7 +3,7 @@ import requests
 
 LINE_API_URL_BROADCAST = "https://api.line.me/v2/bot/message/broadcast"
 LINE_API_URL_PUSH = "https://api.line.me/v2/bot/message/push"
-ADMIN_ID = os.environ["ADMIN_ID"]
+ADMIN_ID = os.environ.get("ADMIN_ID", "dumy")
 
 def get_access_token():
     return os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
